@@ -35,6 +35,9 @@ class dataFilter{
     }
     foundClosingTag(data,exclude_script,exclude_style){
         var last = 0,position = [];
+        // TO UPDATE 
+            // if start or data are equal to start or data or even beetwen those data the they are not opening deffrent from style or script tags
+                // ELSE create nex data
         while (data.indexOf('<',last) != -1) {
             var start = data.indexOf('<',last), end = data.indexOf('>',start), sliced = data.slice(start,end+1);
             //=====> script exclude
