@@ -13,6 +13,7 @@ class dataFilter{
         var children = this.foundChildren(family);
         fs.writeFile('res.txt',JSON.stringify(position_closing_tag),(err)=>{})
         fs.writeFile('family.txt',JSON.stringify(family),(err)=>{})
+        fs.writeFile('children.txt',JSON.stringify(children),(err)=>{})
         // console.log(position_closing_tag);
         
     }
@@ -106,8 +107,6 @@ class dataFilter{
                     element = element.slice(4,element.length-4);
                     if (element == sliced) equal = true;
                 }
-                // console.log(exclude_comments[index].open);
-                // console.log(exclude_comments[index].close);
                 if (start >= exclude_comments[index].open &&  end <= exclude_comments[index].close) {                                        
                     equal = true;   
                 }
@@ -126,6 +125,9 @@ class dataFilter{
                     var name = slice[0].slice(po,slice[0].length), to_delte = 0;
                     if (name.slice(name.length-1,name.length) == '>') name = name.slice(0,name.length-1)
                     return name;
+                }
+                function foundData(data) {
+                    
                 }
                 position.push({
                     open:start,
@@ -178,11 +180,19 @@ class dataFilter{
         }
         fs.writeFile('resultat.txt',JSON.stringify(container),(err)=>{})
         // Create Couple
+        var c = []
         for (let index = 0; index < container.length; index++) {
             const couples = container[index];
             if (couples != undefined) {
-                
+                c[index] = [];
+                while (couples.open != 0|| couples.close != 0) {
+                    var s = couples.open[couples.open.length-1], e = couples.close[0];
+                    if (e != undefined) c[index].push({start:s,end:e});
+                    couples.open.pop()
+                    couples.close.shift()                    
+                }
             }
         }
+        return c;
     }
 }
