@@ -113,7 +113,7 @@ class dataFilter{
             }                
             //=====> script exclude
             if (equal == false) {
-                var closing = false, self_closing = false;
+                var closing = false, self_closing = false, data_founded = {};
                 // closing ?
                 if (sliced.slice(1,2) == '/') closing = true;
                 // self closing ?
@@ -127,7 +127,17 @@ class dataFilter{
                     return name;
                 }
                 function foundData(data) {
-                    
+                    var splitted = data.split(' '), slice = data.slice(), u = [];
+                    for (let index = 0; index < splitted.length; index++) {
+                        const element = splitted[index];
+                        var i = element.indexOf('=');
+                        if (i != -1) {
+                            var variable_name = element.slice(0,i);
+                            var variable_data = element.slice(i+1,element.length)
+                            u.push({name:variable_name,data:variable_data})
+                        }
+                    }
+                    return u;
                 }
                 position.push({
                     open:start,
@@ -135,7 +145,8 @@ class dataFilter{
                     closing_tag:closing,
                     name:foundName(closing),
                     self_closing:self_closing,
-                    data:sliced
+                    data:sliced,
+                    data_founded:foundData(sliced)
                 })                                
             }
             last = end;
