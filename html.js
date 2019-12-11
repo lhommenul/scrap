@@ -1,21 +1,22 @@
 const fs = require ('fs');
 fs.readFile('./data.txt','utf-8',(err,data)=>{
-    new dataFilter(data)
+    var a = new dataFilter(data);
+    var o = a.getTagName('div')
+    console.log(o);
+    
 })
 
 class dataFilter{
     constructor(data){
-        var comments = this.foundComments(data)
+        var comments = this.foundComments(data);
         var script = this.foundScript(data,comments);
         var style = this.foundStyle(data,comments);
         var position_closing_tag = this.foundClosingOpeningTag(data,script,style,comments);
-        var family = this.familyCreator(position_closing_tag);
+        fs.writeFile('d.txt',JSON.stringify(position_closing_tag.data),(err)=>{})
+        var family = this.familyCreator(position_closing_tag.data);
         var children = this.foundChildren(family);
-        fs.writeFile('res.txt',JSON.stringify(position_closing_tag),(err)=>{})
-        fs.writeFile('family.txt',JSON.stringify(family),(err)=>{})
-        fs.writeFile('children.txt',JSON.stringify(children),(err)=>{})
-        // console.log(position_closing_tag);
-        
+        this.propo = position_closing_tag.search;
+        this.containers_data = position_closing_tag.data;
     }
     foundComments(data){
         var last = 0, position = [];
@@ -75,7 +76,7 @@ class dataFilter{
         return position;
     }
     foundClosingOpeningTag(data,exclude_script,exclude_style,exclude_comments){
-        var last = 0,position = [];
+        var last = 0,position = [], params_name = {};
         // TO UPDATE 
             // if start or data are equal to start or data or even beetwen those data the they are not opening deffrent from style or script tags
                 // ELSE create nex data
@@ -147,11 +148,22 @@ class dataFilter{
                     self_closing:self_closing,
                     data:sliced,
                     data_founded:foundData(sliced)
-                })                                
+                })          
+                for (let index = 0; index < position[position.length-1].data_founded.length; index++) {
+                    const element = position[position.length-1].data_founded[index];                    
+                    
+                    // console.log(params_name);
+                    if (params_name[element.name] != undefined) {
+                        params_name[element.name].push(position[position.length-1])
+                    }else{
+                        params_name[element.name] = [];
+                        params_name[element.name].push(position[position.length-1])
+                    }
+                }                      
             }
             last = end;
         }
-        return position;
+        return {data:position,search:params_name};
     }
     familyCreator(all_tags){
         var obj = {name:[],elements:{}}
@@ -189,7 +201,6 @@ class dataFilter{
                 }                
             }   
         }
-        fs.writeFile('resultat.txt',JSON.stringify(container),(err)=>{})
         // Create Couple
         var c = []
         for (let index = 0; index < container.length; index++) {
@@ -205,5 +216,81 @@ class dataFilter{
             }
         }
         return c;
+    }
+    getParams(param_name_searched = String){
+        var result = null;                
+        if (this.propo[param_name_searched] != undefined) {
+            result = this.propo[param_name_searched]
+        }
+        return result;
+    }
+    getClass(class_name_searched = String){
+        var container = []
+        for (let index = 0; index < this.propo['class'].length; index++) {
+            for (let compteur = 0; compteur < this.propo['class'][index].data_founded.length; compteur++) {
+                const element = this.propo['class'][index].data_founded[compteur];
+                if (element.name == 'class') {
+                    // filter the data  
+                    if (element.data.indexOf('"') != -1) {
+                        element.data = element.data.replace(/"/g,'');
+                        element.data = element.data.replace(/>/g,'');
+                    }
+                    if (element.data == class_name_searched) {
+                        container.push(this.propo['class'][index]);
+                    }
+                    
+                }
+                   
+            }
+            
+        }
+        return container;
+    }
+    getId(id_name_searched = String){
+        var container = [], sli = id_name_searched.split(' ');
+        for (let index = 0; index < sli.length; index++) {
+            const j = sli[index];
+            for (let index = 0; index < this.propo['id'].length; index++) {
+                for (let compteur = 0; compteur < this.propo['id'][index].data_founded.length; compteur++) {
+                    const element = this.propo['id'][index].data_founded[compteur];
+                    if (element.name == 'id') {
+                        // filter the data  
+                        
+                        if (element.data.indexOf('"') != -1) {
+                            element.data = element.data.replace(/"/g,'');
+                            element.data = element.data.replace(/>/g,'');
+                        }      
+                        if (element.data == j) {                            
+                            if (container[j] == undefined) {
+                                container[j] = [];
+                                container[j].push(this.propo['id'][index])
+                            }else{
+                                container[j].push(this.propo['id'][index])
+                            }
+                        }
+                    }
+                       
+                }
+                
+            }   
+        }
+        return container;
+    }
+    getTagName(tag_name_searched = String){
+        var container = [], sli = tag_name_searched.split(' ');
+        for (let index = 0; index < sli.length; index++) {
+            const j = sli[index];
+            for (let compteur = 0; compteur < this.containers_data.length; compteur++) {
+                if (this.containers_data[compteur].name == j) {
+                    if (container[j] ==  undefined) {
+                        container[j] = []
+                        container[j].push(this.containers_data[compteur])
+                    } else {
+                        container[j].push(this.containers_data[compteur])
+                    }   
+                }
+            }   
+        }
+        return container;
     }
 }
