@@ -1,7 +1,8 @@
 const fs = require ('fs');
+const axios = require('axios');
 fs.readFile('./data.txt','utf-8',(err,data)=>{
     var a = new dataFilter(data);
-    var o = a.getTagName('div')
+    var o = a.getId('u_0_k u_0_l u_0_m creation_hub_entrypoint');
     console.log(o);
     
 })
@@ -12,7 +13,7 @@ class dataFilter{
         var script = this.foundScript(data,comments);
         var style = this.foundStyle(data,comments);
         var position_closing_tag = this.foundClosingOpeningTag(data,script,style,comments);
-        fs.writeFile('d.txt',JSON.stringify(position_closing_tag.data),(err)=>{})
+        fs.writeFile('d.txt',JSON.stringify(position_closing_tag.search),(err)=>{})
         var family = this.familyCreator(position_closing_tag.data);
         var children = this.foundChildren(family);
         this.propo = position_closing_tag.search;
@@ -80,8 +81,9 @@ class dataFilter{
         // TO UPDATE 
             // if start or data are equal to start or data or even beetwen those data the they are not opening deffrent from style or script tags
                 // ELSE create nex data
+                var i = 0;
         while (data.indexOf('<',last) != -1) {
-            var start = data.indexOf('<',last), end = data.indexOf('>',start), sliced = data.slice(start,end+1), equal = false;
+            var start = data.indexOf('<',last), end = data.indexOf('>',start), sliced = data.slice(start,end+1), equal = false, commented = false;
             // exclude_script
             for (let index = 0; index < exclude_script.length; index++) {
                 var element = exclude_script[index].data;
@@ -100,26 +102,26 @@ class dataFilter{
                     equal = true;   
                 }
             }         
+            if(sliced.indexOf('div') != -1 && equal == false){i++}
             // exclude_comments
+            // PROBLEME => NEED TO EXTRACT FROM COMMENTS THE TAGS
             for (let index = 0; index < exclude_comments.length; index++) {
                 var element = exclude_comments[index].data;
-                for (let index = 0; index < exclude_comments.length; index++) {
-                    var element = exclude_comments[index].data;
-                    element = element.slice(4,element.length-4);
-                    if (element == sliced) equal = true;
-                }
-                if (start >= exclude_comments[index].open &&  end <= exclude_comments[index].close) {                                        
-                    equal = true;   
+                if (start >= exclude_comments[index].open &&  end <= exclude_comments[index].close) {  
+                    commented = true;                                      
+                    // equal = true;   
                 }
             }                
+            // if(sliced.indexOf('div') != -1 && equal == false){i++}
             //=====> script exclude
             if (equal == false) {
-                var closing = false, self_closing = false, data_founded = {};
+                var closing = false, self_closing = false;
                 // closing ?
                 if (sliced.slice(1,2) == '/') closing = true;
                 // self closing ?
                 var size = sliced.length;
                 if (sliced.slice(size-2,size-1) == '/' || sliced.slice(1,2) == '!') self_closing = true;
+                // found the name of the tag
                 function foundName(c) {                    
                     var slice = sliced.split(' '), po = 1;
                     if (c == true) po = 2;
@@ -127,6 +129,7 @@ class dataFilter{
                     if (name.slice(name.length-1,name.length) == '>') name = name.slice(0,name.length-1)
                     return name;
                 }
+                // found data inside a tag
                 function foundData(data) {
                     var splitted = data.split(' '), slice = data.slice(), u = [];
                     for (let index = 0; index < splitted.length; index++) {
@@ -145,13 +148,14 @@ class dataFilter{
                     close:end,
                     closing_tag:closing,
                     name:foundName(closing),
+                    commented:commented,
                     self_closing:self_closing,
                     data:sliced,
                     data_founded:foundData(sliced)
                 })          
+                // Create an array of every single tag_name founded 
                 for (let index = 0; index < position[position.length-1].data_founded.length; index++) {
-                    const element = position[position.length-1].data_founded[index];                    
-                    
+                    const element = position[position.length-1].data_founded[index];                                        
                     // console.log(params_name);
                     if (params_name[element.name] != undefined) {
                         params_name[element.name].push(position[position.length-1])
@@ -163,6 +167,8 @@ class dataFilter{
             }
             last = end;
         }
+        console.log(i);
+        
         return {data:position,search:params_name};
     }
     familyCreator(all_tags){
