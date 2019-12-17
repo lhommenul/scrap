@@ -2,8 +2,8 @@ const fs = require ('fs');
 const axios = require('axios');
 fs.readFile('./data.txt','utf-8',(err,data)=>{
     var a = new dataFilter(data);
-    var o = a.getId('u_0_k u_0_l u_0_m creation_hub_entrypoint');
-    console.log(o);
+    var i = a.getParams('href a')
+    // console.log(i);
     
 })
 
@@ -13,11 +13,18 @@ class dataFilter{
         var script = this.foundScript(data,comments);
         var style = this.foundStyle(data,comments);
         var position_closing_tag = this.foundClosingOpeningTag(data,script,style,comments);
-        fs.writeFile('d.txt',JSON.stringify(position_closing_tag.search),(err)=>{})
+        position_closing_tag.data.push(comments)
+        position_closing_tag.data.push(style)
+        position_closing_tag.data.push(script)
         var family = this.familyCreator(position_closing_tag.data);
-        var children = this.foundChildren(family);
+        var children = this.foundChildren(family,data);
+        fs.writeFile('couples.txt',JSON.stringify(children),(err)=>{})
+        
         this.propo = position_closing_tag.search;
         this.containers_data = position_closing_tag.data;
+        this.containers_data.push(comments)
+        this.containers_data.push(style)
+        this.containers_data.push(script)
     }
     foundComments(data){
         var last = 0, position = [];
@@ -167,8 +174,6 @@ class dataFilter{
             }
             last = end;
         }
-        console.log(i);
-        
         return {data:position,search:params_name};
     }
     familyCreator(all_tags){
@@ -185,7 +190,7 @@ class dataFilter{
         }
         return obj
     }
-    foundChildren(data){
+    foundChildren(data,stat){
         var container = []
         for (let position = 0; position < data.name.length; position++) {
             const element = data.name[position];
@@ -199,10 +204,8 @@ class dataFilter{
                         if (container[position] != undefined) {
                             container[position].close.push(o)                            
                         }
-                    }else{
-                        if (container[position] != undefined) {
-                            container[position].open.push(o)                            
-                        }                        
+                    }else if(container[position] != undefined){
+                        container[position].open.push(o);
                     }
                 }                
             }   
@@ -210,13 +213,24 @@ class dataFilter{
         // Create Couple
         var c = []
         for (let index = 0; index < container.length; index++) {
-            const couples = container[index];
+            var couples = container[index];
             if (couples != undefined) {
                 c[index] = [];
                 while (couples.open != 0|| couples.close != 0) {
-                    var s = couples.open[couples.open.length-1], e = couples.close[0];
-                    if (e != undefined) c[index].push({start:s,end:e});
-                    couples.open.pop()
+                    var s = couples.open[0], e = couples.close[0];
+                    if (e != undefined && s != undefined) {
+                        c[index].push(
+                            {
+                                start:s,
+                                end:e,
+                                commented:e.commented,
+                                data_founded:e.data_founded,
+                                name:couples.close[0].name,
+                                data:stat.slice(s.close+1,e.open)
+                            }
+                        )
+                    }
+                    couples.open.shift()
                     couples.close.shift()                    
                 }
             }
@@ -224,31 +238,35 @@ class dataFilter{
         return c;
     }
     getParams(param_name_searched = String){
-        var result = null;                
-        if (this.propo[param_name_searched] != undefined) {
-            result = this.propo[param_name_searched]
+        var result = null, split = param_name_searched.split(' ');
+        for (let index = 0; index < split.length; index++) {
+            if (this.propo[split[index]] != undefined) {
+                result = this.propo[split[index]]
+            }            
         }
         return result;
     }
     getClass(class_name_searched = String){
-        var container = []
-        for (let index = 0; index < this.propo['class'].length; index++) {
-            for (let compteur = 0; compteur < this.propo['class'][index].data_founded.length; compteur++) {
-                const element = this.propo['class'][index].data_founded[compteur];
-                if (element.name == 'class') {
-                    // filter the data  
-                    if (element.data.indexOf('"') != -1) {
-                        element.data = element.data.replace(/"/g,'');
-                        element.data = element.data.replace(/>/g,'');
+        var container = [], split = class_name_searched.split(' ');
+        for (let l = 0; l < split.length; l++) {
+            for (let index = 0; index < this.propo['class'].length; index++) {
+                for (let compteur = 0; compteur < this.propo['class'][index].data_founded.length; compteur++) {
+                    const element = this.propo['class'][index].data_founded[compteur];
+                    if (element.name == 'class') {
+                        // filter the data  
+                        if (element.data.indexOf('"') != -1) {
+                            element.data = element.data.replace(/"/g,'');
+                            element.data = element.data.replace(/>/g,'');
+                        }
+                        if (element.data == split[l]) {
+                            container.push(this.propo['class'][index]);
+                        }
+                        
                     }
-                    if (element.data == class_name_searched) {
-                        container.push(this.propo['class'][index]);
-                    }
-                    
+                       
                 }
-                   
+                
             }
-            
         }
         return container;
     }
