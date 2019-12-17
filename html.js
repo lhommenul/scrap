@@ -2,8 +2,8 @@ const fs = require ('fs');
 const axios = require('axios');
 fs.readFile('./data.txt','utf-8',(err,data)=>{
     var a = new dataFilter(data);
-    var i = a.getParams('href a')
-    // console.log(i);
+    var i = a.getParams('div')
+    console.log(i);
     
 })
 
@@ -18,9 +18,8 @@ class dataFilter{
         position_closing_tag.data.push(script)
         var family = this.familyCreator(position_closing_tag.data);
         var children = this.foundChildren(family,data);
-        fs.writeFile('couples.txt',JSON.stringify(children),(err)=>{})
-        
-        this.propo = position_closing_tag.search;
+        fs.writeFile('couples.txt',JSON.stringify(children),(err)=>{})        
+        this.propo = this.containerNames(position_closing_tag.data)
         this.containers_data = position_closing_tag.data;
         this.containers_data.push(comments)
         this.containers_data.push(style)
@@ -159,22 +158,36 @@ class dataFilter{
                     self_closing:self_closing,
                     data:sliced,
                     data_founded:foundData(sliced)
-                })          
-                // Create an array of every single tag_name founded 
-                for (let index = 0; index < position[position.length-1].data_founded.length; index++) {
-                    const element = position[position.length-1].data_founded[index];                                        
-                    // console.log(params_name);
-                    if (params_name[element.name] != undefined) {
-                        params_name[element.name].push(position[position.length-1])
-                    }else{
-                        params_name[element.name] = [];
-                        params_name[element.name].push(position[position.length-1])
-                    }
-                }                      
+                })                               
             }
             last = end;
         }
-        return {data:position,search:params_name};
+        return {data:position};
+    }
+    containerNames(data){
+        var container = {}
+        // Create an array of every single tag_name founded 
+        for (let index = 0; index < data.length; index++) {
+            const element = data[index];
+            if (container[element.name] == undefined) {
+                container[element.name] = [];
+                container[element.name].push(element);
+            }else{
+                container[element.name].push(element)
+            }
+            if (element.data_founded != undefined) {
+                for (let index = 0; index < element.data_founded.length; index++) {
+                    const o = element.data_founded[index];
+                    if (container[o.name] == undefined) {
+                        container[o.name] = [];
+                        container[o.name].push(o);
+                    }else{
+                        container[o.name].push(o)
+                    }
+                }                
+            }
+        } 
+        return container;
     }
     familyCreator(all_tags){
         var obj = {name:[],elements:{}}
