@@ -2,25 +2,22 @@ const fs = require ('fs');
 const axios = require('axios');
 fs.readFile('./data.txt','utf-8',(err,data)=>{
     var a = new dataFilter(data);
-    var i = a.getParams('div')
-    console.log(i);
-    
+    // var i = a.getParams('href')
+    // console.log(i);    
 })
 
 class dataFilter{
     constructor(data){
+        // DETECTION => STYLE, SCRIPTS, COMMENTS tags ... 
         var comments = this.foundComments(data);
         var script = this.foundScript(data,comments);
         var style = this.foundStyle(data,comments);
+        // DETECTION => OPEN, SELF_CLOSING, CLOSING tags ... 
         var position_closing_tag = this.foundClosingOpeningTag(data,script,style,comments);
-        position_closing_tag.data.push(comments)
-        position_closing_tag.data.push(style)
-        position_closing_tag.data.push(script)
-        var family = this.familyCreator(position_closing_tag.data);
+        var family = this.familyCreator(position_closing_tag);
         var children = this.foundChildren(family,data);
-        fs.writeFile('couples.txt',JSON.stringify(children),(err)=>{})        
-        this.propo = this.containerNames(position_closing_tag.data)
-        this.containers_data = position_closing_tag.data;
+        
+        this.containers_data = position_closing_tag;
         this.containers_data.push(comments)
         this.containers_data.push(style)
         this.containers_data.push(script)
@@ -162,34 +159,14 @@ class dataFilter{
             }
             last = end;
         }
-        return {data:position};
-    }
-    containerNames(data){
-        var container = {}
-        // Create an array of every single tag_name founded 
-        for (let index = 0; index < data.length; index++) {
-            const element = data[index];
-            if (container[element.name] == undefined) {
-                container[element.name] = [];
-                container[element.name].push(element);
-            }else{
-                container[element.name].push(element)
-            }
-            if (element.data_founded != undefined) {
-                for (let index = 0; index < element.data_founded.length; index++) {
-                    const o = element.data_founded[index];
-                    if (container[o.name] == undefined) {
-                        container[o.name] = [];
-                        container[o.name].push(o);
-                    }else{
-                        container[o.name].push(o)
-                    }
-                }                
-            }
-        } 
-        return container;
+        // add script ; style ; comments;
+        position.push(exclude_style)
+        position.push(exclude_script)
+        position.push(exclude_comments)
+        return position;
     }
     familyCreator(all_tags){
+        // list of every single tags_name founded in the document
         var obj = {name:[],elements:{}}
         for (let index = 0; index < all_tags.length; index++) {
             const element = all_tags[index].name;
@@ -223,6 +200,7 @@ class dataFilter{
                 }                
             }   
         }
+        data.elements = {}
         // Create Couple
         var c = []
         for (let index = 0; index < container.length; index++) {
@@ -231,23 +209,38 @@ class dataFilter{
                 c[index] = [];
                 while (couples.open != 0|| couples.close != 0) {
                     var s = couples.open[0], e = couples.close[0];
-                    if (e != undefined && s != undefined) {
-                        c[index].push(
+                    if (e != undefined && s != undefined) { 
+                        c[index].push(                            
                             {
-                                start:s,
-                                end:e,
+                                start:s.open,
+                                end:e.close,
                                 commented:e.commented,
-                                data_founded:e.data_founded,
+                                data_founded:s.data_founded,
                                 name:couples.close[0].name,
                                 data:stat.slice(s.close+1,e.open)
                             }
                         )
+                        if (data.elements[couples.close[0].name] == undefined) {
+                            data.elements[couples.close[0].name] = [];
+                            data.elements[couples.close[0].name].push(c[index]);
+                        }else{
+                            data.elements[couples.close[0].name].push({
+                                start:s.open,
+                                end:e.close,
+                                commented:e.commented,
+                                data_founded:s.data_founded,
+                                name:couples.close[0].name,
+                                data:stat.slice(s.close+1,e.open)
+                            })
+                        }
                     }
                     couples.open.shift()
                     couples.close.shift()                    
                 }
             }
-        }
+        }        
+        console.log(data.elements);
+        
         return c;
     }
     getParams(param_name_searched = String){
