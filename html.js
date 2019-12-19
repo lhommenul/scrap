@@ -14,13 +14,13 @@ class dataFilter{
         var style = this.foundStyle(data,comments);
         // DETECTION => OPEN, SELF_CLOSING, CLOSING tags ... 
         var position_closing_tag = this.foundClosingOpeningTag(data,script,style,comments);
+        // LIST OF ALL TAGS-NAMES AND ONE ARRAY OF ALL TAGS-NAMES WITH ALL OBJECTS ASSOCIETED TO INSIDE
         var family = this.familyCreator(position_closing_tag);
         var children = this.foundChildren(family,data);
+        fs.writeFile('resultat.txt',JSON.stringify(children),(err)=>{})
         
-        this.containers_data = position_closing_tag;
-        this.containers_data.push(comments)
-        this.containers_data.push(style)
-        this.containers_data.push(script)
+        this.familys = family;
+        
     }
     foundComments(data){
         var last = 0, position = [];
@@ -181,7 +181,7 @@ class dataFilter{
         return obj
     }
     foundChildren(data,stat){
-        var container = []
+        var container = [], self_closing = {name:[],elements:{}}
         for (let position = 0; position < data.name.length; position++) {
             const element = data.name[position];
             for (let index = 0; index < data.elements[element].length; index++) {
@@ -196,6 +196,14 @@ class dataFilter{
                         }
                     }else if(container[position] != undefined){
                         container[position].open.push(o);
+                    }
+                }else{
+                    if (self_closing.elements[o.name] != undefined) {
+                        self_closing.elements[o.name].push(o)
+                    }else{
+                        self_closing.elements[o.name] = []
+                        self_closing.name.push(o.name)
+                        self_closing.elements[o.name].push(o)
                     }
                 }                
             }   
@@ -239,9 +247,12 @@ class dataFilter{
                 }
             }
         }        
-        console.log(data.elements);
-        
-        return c;
+        // Push all self_closing tags into the list                                                                                        
+        for (let index = 0; index < self_closing.name.length; index++) {
+            const element = self_closing.name[index];
+            if (data.name[element.name] == undefined) data.elements[element.name] = self_closing.elements[element.name];
+        }        
+        return data.elements;
     }
     getParams(param_name_searched = String){
         var result = null, split = param_name_searched.split(' ');
