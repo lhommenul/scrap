@@ -2,8 +2,8 @@ const fs = require ('fs');
 const axios = require('axios');
 fs.readFile('./data.txt','utf-8',(err,data)=>{
     var a = new dataFilter(data);
-    // var i = a.getParams('href')
-    // console.log(i);    
+    var i = a.getTagName('div')
+    console.log(i);    
 })
 
 class dataFilter{
@@ -16,10 +16,8 @@ class dataFilter{
         var position_closing_tag = this.foundClosingOpeningTag(data,script,style,comments);
         // LIST OF ALL TAGS-NAMES AND ONE ARRAY OF ALL TAGS-NAMES WITH ALL OBJECTS ASSOCIETED TO INSIDE
         var family = this.familyCreator(position_closing_tag);
-        var children = this.foundChildren(family,data);
-        fs.writeFile('resultat.txt',JSON.stringify(children),(err)=>{})
-        
-        this.familys = family;
+        var children = this.foundChildren(family,data);        
+        this.childrens = children;
         
     }
     foundComments(data){
@@ -321,15 +319,8 @@ class dataFilter{
         var container = [], sli = tag_name_searched.split(' ');
         for (let index = 0; index < sli.length; index++) {
             const j = sli[index];
-            for (let compteur = 0; compteur < this.containers_data.length; compteur++) {
-                if (this.containers_data[compteur].name == j) {
-                    if (container[j] ==  undefined) {
-                        container[j] = []
-                        container[j].push(this.containers_data[compteur])
-                    } else {
-                        container[j].push(this.containers_data[compteur])
-                    }   
-                }
+            if (this.childrens[j] != undefined) {
+                container.push(this.childrens[j])
             }   
         }
         return container;
