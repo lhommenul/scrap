@@ -1,9 +1,9 @@
 const fs = require ('fs');
 const axios = require('axios');
-fs.readFile('./data.txt','utf-8',(err,data)=>{
+fs.readFile('./you.txt','utf-8',(err,data)=>{
     var a = new dataFilter(data);
-    var i = a.getTagName('div')
-    console.log(i);    
+    // console.log(a);    
+    var i = a.getTagName('script')
 })
 
 class dataFilter{
@@ -16,8 +16,7 @@ class dataFilter{
         var position_closing_tag = this.foundClosingOpeningTag(data,script,style,comments);
         // LIST OF ALL TAGS-NAMES AND ONE ARRAY OF ALL TAGS-NAMES WITH ALL OBJECTS ASSOCIETED TO INSIDE
         var family = this.familyCreator(position_closing_tag);
-        var children = this.foundChildren(family,data);        
-        this.childrens = children;
+        this.childrens = this.foundChildren(family,data);        
         
     }
     foundComments(data){
@@ -216,16 +215,14 @@ class dataFilter{
                 while (couples.open != 0|| couples.close != 0) {
                     var s = couples.open[0], e = couples.close[0];
                     if (e != undefined && s != undefined) { 
-                        c[index].push(                            
-                            {
+                        c[index].push({
                                 start:s.open,
                                 end:e.close,
                                 commented:e.commented,
                                 data_founded:s.data_founded,
                                 name:couples.close[0].name,
                                 data:stat.slice(s.close+1,e.open)
-                            }
-                        )
+                            })
                         if (data.elements[couples.close[0].name] == undefined) {
                             data.elements[couples.close[0].name] = [];
                             data.elements[couples.close[0].name].push(c[index]);
