@@ -2,7 +2,7 @@ const fs = require ('fs');
 const axios = require('axios');
 fs.readFile('./you.txt','utf-8',(err,data)=>{
     var a = new dataFilter(data);
-    // console.log(a);    
+    console.log(a.childrens.h3);    
     var i = a.getTagName('script')
 })
 
@@ -37,18 +37,41 @@ class dataFilter{
         while (data.indexOf('<script',last) != -1) {
             var start = data.indexOf('<script',last), end = data.indexOf('>',start),start_end = data.indexOf('</script',end),end_end = data.indexOf('>',start_end), sliced = data.slice(start,end_end+1), ok = true;
             for (let index = 0; index < comments.length; index++) {
-                const element = comments[index].data;
-                var size = element.length;
-                if (sliced == element.slice(4,size-4)) {
-                    ok = false;
-                }
+                const element = comments[index].data, size = element.length;
+                if (sliced == element.slice(4,size-4)) ok = false;
             }
-            if (ok == true) {                
+            // IF THE TAG IS NOT INSIDE A COMMENT
+            if (ok == true) {  
+                //Check if there is params data etc....
+                var cutted = data.slice(start,end+1), spl = cutted.split(' '), container_data = [];
+                if (spl.length != 1) foundData(spl);
+                function foundData(data) {
+                    while (data.length != 0) {
+                        let search = data[0].indexOf('=',0);
+                        if (search != -1) {
+                            // there is something inside with =
+                            const params_name = data[0].slice(0,search);
+                            var params_data = data[0].slice(search+1,data[0].length)                                                        
+                            if (params_data.slice(0,1) == '"') params_data = params_data.slice(1,params_data.length);
+                            if (params_data.slice(params_data.length-2,params_data.length) == '">') params_data = params_data.slice(0,params_data.length-2);
+                            if (params_data.slice(params_data.length-1,params_data.length) == '"') params_data = params_data.slice(0,params_data.length-1);
+                            if (params_data.slice(params_data.length-1,params_data.length) == '>') params_data = params_data.slice(0,params_data.length-1);
+                            // Push it inside the list => container_data
+                            container_data.push({name:params_name,data:params_data})
+                        } else {
+                            // nope nothing => no = founded inside data
+                        }
+                        data.shift()
+                    }                    
+                }
+                
+                // Create an object and Push it into position array
                 position.push({
                     open:start,
                     close:end_end+1,
+                    params_data:container_data,
                     data:sliced
-                })                
+                })                                
             }
             last = end
         }
@@ -61,19 +84,31 @@ class dataFilter{
             for (let index = 0; index < comments.length; index++) {
                 const element = comments[index].data;
                 var size = element.length;
-                if (sliced == element.slice(4,size-4)) {
-                    ok = false;
-                }
+                if (sliced == element.slice(4,size-4)) ok = false;                
             }
             if (ok == true) {
+                var d = data.slice(start,end), spl = d.split(' '), container = [];
+                if (spl.length != 1) foundData(spl);
+                function foundData(data) {
+                    while (data.length != 0) {
+                        var name = '', result = '';
+                        if (data[0] != undefined && data[0].indexOf('=') != -1){                            
+                            name = data[0].slice(0,data[0].indexOf('='))
+                            result = data[0].slice(data[0].indexOf('=')+1,data[0].length)
+                            container.push({name:name,data:result})
+                        };                        
+                        data.shift();                                      
+                    }
+                }
                 position.push({
                     open:start,
                     close:end_end+1,
+                    data_founded:container,
                     data:sliced
-                })                
+                })                   
             }
             last = end;
-        }
+        }        
         return position;
     }
     foundClosingOpeningTag(data,exclude_script,exclude_style,exclude_comments){
